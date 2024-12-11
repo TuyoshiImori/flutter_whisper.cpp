@@ -45,3 +45,4 @@ app.*.map.json
 output.wav
 ggml-base.en.bin
 ggml-tiny.en.bin
+ggml-large-v3-turbo.bin
