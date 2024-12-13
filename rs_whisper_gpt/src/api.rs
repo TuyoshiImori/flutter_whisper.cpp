@@ -3,7 +3,7 @@ use objc::rc::autoreleasepool;
 use objc::runtime::Object;
 use objc::{class, msg_send, sel, sel_impl};
 use std::path::{Path, PathBuf};
-use whisper_rs::{FullParams, SamplingStrategy, WhisperContext};
+use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
 // Get current dir of the app
 fn get_resources_dir() -> PathBuf {
@@ -41,21 +41,20 @@ fn parse_wav_file(path: &Path) -> Vec<i16> {
         .collect::<Vec<_>>()
 }
 
-fn run_whisper_audio_to_text(ctx: WhisperContext, samples: Vec<f32>, lang: Option<String>) -> Vec<String> {
+fn run_whisper_audio_to_text(ctx: WhisperContext, samples: Vec<f32>, _lang: Option<String>) -> Vec<String> {
     let mut strings: Vec<String> = vec![];
-    let mut state: whisper_rs::WhisperState<'_> =
-        ctx.create_state().expect("failed to create state");
+    let mut state: whisper_rs::WhisperState = ctx.create_state().expect("failed to create state");
 
     let mut params = FullParams::new(SamplingStrategy::default());
 
     // here we set the number of threads to use to 1
     params.set_n_threads(1);
     // we also enable translation
-    params.set_translate(true);
+    params.set_translate(false);
     // and set the language to translate
     // default to english, try to unwrap if provided
-    let lang_code = &lang.unwrap_or("en".to_string());
-    params.set_language(Some(&lang_code));
+    // let lang_code = &lang.unwrap_or("en".to_string());
+    // params.set_language(Some(&lang_code));
     // we also explicitly disable anything that prints to stdout
     params.set_print_special(false);
     params.set_print_progress(false);
@@ -97,12 +96,14 @@ pub fn run_whisper_model(path: String, lang: Option<String>) -> Vec<String> {
         }
         // Parse Wave File
         let original_samples = parse_wav_file(audio_path);
-        let samples = whisper_rs::convert_integer_to_float_audio(&original_samples);
-        let ctx =
-            WhisperContext::new(&whisper_path.to_string_lossy()).expect("failed to open model");
+        let mut float_samples = vec![0.0f32; original_samples.len()];
+        let _ = whisper_rs::convert_integer_to_float_audio(&original_samples, &mut float_samples);
+        let params = WhisperContextParameters::default();
+        let ctx = WhisperContext::new_with_params(&whisper_path.to_string_lossy(), params)
+            .expect("failed to open model");
 
         // Run Whisper Model on Samples and Return Vec<String> of Text
-        run_whisper_audio_to_text(ctx, samples, lang)
+        run_whisper_audio_to_text(ctx, float_samples, lang)
     });
     result
 }

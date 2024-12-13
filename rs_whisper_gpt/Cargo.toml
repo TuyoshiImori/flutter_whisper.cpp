@@ -17,7 +17,8 @@ num = "0.4"
 image = "0.24.3"  
 crossbeam = "0.8" 
 hound = "3"
-whisper-rs = "0.8.0"
+whisper-rs = "0.13.2"
+whisper-rs-sys = "0.11.1"
 objc = "0.2.7"
 
 [target.'cfg(target_os = "ios")']
